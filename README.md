@@ -14,7 +14,9 @@ cd YMH219-ChatApp
 dotnet run -c Release
 ```
 
-1. **Sunucu** sekmesinde dinleme portunu seçin (varsayılan `5056`) ve **Sunucuyu başlat** düğmesine basın.
+En hızlı deneme için **Yerel odayı aç** düğmesine basın. Uygulama boş bir yerel port seçer ve aynı pencereden bağlanır. İkinci pencere için adres ve port alt mesajda görünür.
+
+1. Sunucuyu elle başlatmak için **Sunucu** sekmesinde dinleme portunu seçin (varsayılan `5056`) ve **Sunucuyu başlat** düğmesine basın.
 2. Aynı pencerede **Sohbet** sekmesine geçebilir veya ikinci bir pencere açabilirsiniz. Adres `127.0.0.1`, port sunucuyla aynı olmalı. Bir takma ad girip **Bağlan** deyin.
 3. Başka bir pencereden farklı bir takma adla aynı odaya katılın. **Gönder** veya Enter mesajı genel odaya yollar. Shift+Enter yeni satır açar.
 4. Kendi mesajınız sağdaki renkli balonda **Siz · Takma ad**, diğer mesajlar solda gönderen ve saat ile görünür. Ortadaki satırlar sistem bildirimleridir.
