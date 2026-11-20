@@ -16,6 +16,7 @@ internal sealed class RoomHost
     private Task? accept;
 
     public RoomHost(int port, bool lan) => listener = new(lan ? IPAddress.Any : IPAddress.Loopback, port);
+    public int Port => ((IPEndPoint)listener.LocalEndpoint).Port;
     public event Action<RoomMessage>? Activity;
     public event Action? RosterChanged;
 

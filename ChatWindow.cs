@@ -10,6 +10,7 @@ internal sealed class ChatWindow : Form
     private readonly NumericUpDown serverPort = Port("Sunucu portu");
     private readonly Button connect = Ui.Button("Bağlan", true);
     private readonly Button disconnect = Ui.Button("Bağlantıyı kes");
+    private readonly Button quickRoom = Ui.Button("Yerel odayı aç", true);
     private readonly Button send = Ui.Button("Gönder", true);
     private readonly Button start = Ui.Button("Sunucuyu başlat", true);
     private readonly Button stop = Ui.Button("Sunucuyu durdur");
@@ -55,6 +56,7 @@ internal sealed class ChatWindow : Form
         SizeChanged += (_, _) => feedback.MaximumSize = new(Math.Max(1, ClientSize.Width - 36), 0);
 
         connect.Click += async (_, _) => await Connect();
+        quickRoom.Click += async (_, _) => await OpenLocalRoom();
         disconnect.Click += (_, _) => { if (connectingToken is not null) connectingToken.Cancel(); else Disconnect("Bağlantı kesildi."); };
         send.Click += async (_, _) => await Send();
         draft.TextChanged += (_, _) => RefreshClient();
@@ -66,7 +68,7 @@ internal sealed class ChatWindow : Form
                 await Send();
             }
         };
-        start.Click += async (_, _) => await StartHost();
+        start.Click += async (_, _) => await StartHost((int)serverPort.Value, lan.Checked);
         stop.Click += async (_, _) => await StopHost();
         RefreshClient();
         RefreshHost();
@@ -83,7 +85,8 @@ internal sealed class ChatWindow : Form
         composer.Controls.Add(draft, 0, 0);
         composer.Controls.Add(send, 1, 0);
         roomState.Margin = new(12, 7, 0, 0);
-        var room = Ui.Bar(Ui.Label("Genel oda", 17, true), roomState);
+        quickRoom.Margin = new(12, 0, 0, 0);
+        var room = Ui.Bar(Ui.Label("Genel oda", 17, true), roomState, quickRoom);
         return Ui.Stack(16, (fields, 0), (room, 0), (identity, 0), (conversation, 100), (composer, 0),
             (Ui.Label("Alıcı  ·  Genel odadaki herkes    |    Enter gönderir, Shift+Enter yeni satır açar.", 9, ink: Ui.Muted), 0));
     }
@@ -113,6 +116,26 @@ internal sealed class ChatWindow : Form
         new() { AccessibleName = name, Width = width, Margin = new(0, 6, 9, 3) };
     private static NumericUpDown Port(string name) =>
         new() { Minimum = 1024, Maximum = 65535, Value = 5056, AccessibleName = name, Width = 78, Margin = new(0, 6, 10, 3) };
+
+    private async Task OpenLocalRoom()
+    {
+        if (client is not null || connectingToken is not null || serverStopping) return;
+        if (nickname.Text.Trim().Length == 0) nickname.Text = "Misafir";
+        if (!RoomProtocol.ValidName(nickname.Text.Trim()))
+        {
+            feedback.Text = "Yerel oda için geçerli bir takma ad yazın.";
+            nickname.Focus();
+            return;
+        }
+        if (server is null && !await StartHost(0, false)) return;
+        if (server is null || closing) return;
+        hostAddress.Text = "127.0.0.1";
+        clientPort.Value = server.Port;
+        int assignedPort = server.Port;
+        await Connect();
+        if (client is not null)
+            feedback.Text = $"Yerel oda açık. İkinci pencere için 127.0.0.1:{assignedPort} ve farklı bir takma ad kullanın.";
+    }
 
     private async Task Connect()
     {
@@ -205,17 +228,17 @@ internal sealed class ChatWindow : Form
     {
         bool idle = client is null && connectingToken is null;
         connect.Enabled = hostAddress.Enabled = clientPort.Enabled = nickname.Enabled = idle;
+        quickRoom.Enabled = idle && !serverStopping;
         disconnect.Enabled = !idle;
         disconnect.Text = connectingToken is not null ? "İptal et" : "Bağlantıyı kes";
         draft.Enabled = client is not null;
         send.Enabled = !sending && client is not null && draft.Text.Trim().Length > 0;
     }
 
-    private async Task StartHost()
+    private async Task<bool> StartHost(int port, bool network)
     {
-        if (server is not null || serverStopping) return;
-        int port = (int)serverPort.Value;
-        var room = new RoomHost(port, lan.Checked);
+        if (server is not null || serverStopping) return false;
+        var room = new RoomHost(port, network);
         room.Activity += message => UiThread(() =>
         {
             if (!ReferenceEquals(server, room)) return;
@@ -235,7 +258,9 @@ internal sealed class ChatWindow : Form
         {
             room.Start();
             server = room;
-            hostState.Text = $"●  Dinleniyor · {(lan.Checked ? "Yerel ağ" : "127.0.0.1")}:{port}";
+            serverPort.Value = room.Port;
+            lan.Checked = network;
+            hostState.Text = $"●  Dinleniyor · {(network ? "Yerel ağ" : "127.0.0.1")}:{room.Port}";
             feedback.Text = "";
         }
         catch (Exception ex)
@@ -244,6 +269,7 @@ internal sealed class ChatWindow : Form
             if (!closing) feedback.Text = "Sunucu başlatılamadı. " + ex.Message;
         }
         if (!closing) RefreshHost();
+        return server is not null;
     }
 
     private async Task StopHost()
@@ -272,6 +298,7 @@ internal sealed class ChatWindow : Form
     {
         start.Enabled = serverPort.Enabled = lan.Enabled = server is null && !serverStopping;
         stop.Enabled = server is not null;
+        quickRoom.Enabled = client is null && connectingToken is null && !serverStopping;
     }
 
     private void UiThread(Action action)
