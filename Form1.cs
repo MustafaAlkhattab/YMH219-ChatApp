@@ -33,7 +33,7 @@ public partial class Form1 : Form
         var serverLayout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new(10), RowCount = 3 };
         serverLayout.RowStyles.Add(new(SizeType.Absolute, 80)); serverLayout.RowStyles.Add(new(SizeType.Percent, 65)); serverLayout.RowStyles.Add(new(SizeType.Percent, 35));
         var serverTools = new FlowLayoutPanel { Dock = DockStyle.Fill };
-        var serverPort = new NumericUpDown { Value = 5055, Minimum = 1024, Maximum = 65535, Width = 85 };
+        var serverPort = new NumericUpDown { Minimum = 1024, Maximum = 65535, Value = 5055, Width = 85 };
         var lan = new CheckBox { Text = "Yerel ağ (LAN)", AutoSize = true };
         var start = new Button { Text = "Sunucuyu başlat", AutoSize = true }; var stop = new Button { Text = "Sunucuyu durdur", AutoSize = true, Enabled = false };
         serverTools.Controls.AddRange([new Label { Text = "Port", AutoSize = true }, serverPort, lan, start, stop]);
@@ -69,3 +69,4 @@ public partial class Form1 : Form
     private void Ui(Action action) { if (closing || IsDisposed || !IsHandleCreated) return; try { BeginInvoke(action); } catch (InvalidOperationException) { } }
     protected override void OnFormClosing(FormClosingEventArgs e) { closing = true; client.Dispose(); server.Dispose(); base.OnFormClosing(e); }
 }
+
