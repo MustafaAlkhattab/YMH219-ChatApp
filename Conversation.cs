@@ -59,12 +59,11 @@ internal sealed class Conversation : Panel
     {
         private readonly Label body;
         private readonly Label header;
+        private const TextFormatFlags MeasureFlags = TextFormatFlags.TextBoxControl | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix;
 
         public Bubble(RoomMessage message, bool mine)
         {
             bool notice = message.Kind != MessageKind.Chat;
-            AutoSize = true;
-            AutoSizeMode = AutoSizeMode.GrowAndShrink;
             Anchor = notice ? AnchorStyles.None : mine ? AnchorStyles.Right : AnchorStyles.Left;
             Padding = notice ? new(8, 4, 8, 4) : new(13, 8, 13, 9);
             Margin = new(0, 3, 0, 6);
@@ -73,13 +72,20 @@ internal sealed class Conversation : Panel
                 notice ? $"{message.Time.ToLocalTime():HH:mm}" : $"{(mine ? "Siz · " : "")}{message.Name}    {message.Time.ToLocalTime():HH:mm}",
                 9.5f, true, Ui.Accent);
             body = Ui.Label(message.Text, notice ? 9.5f : 11f, ink: notice ? Ui.Muted : Ui.Text);
-            var content = new TableLayoutPanel { ColumnCount = 1, RowCount = 2, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, Margin = Padding.Empty };
-            content.Controls.Add(header, 0, 0);
-            content.Controls.Add(body, 0, 1);
-            Controls.Add(content);
+            header.AutoSize = body.AutoSize = false;
+            Controls.AddRange([header, body]);
             AccessibleName = notice ? "Oda bildirimi" : "Mesaj";
         }
 
-        public void Wrap(int width) => header.MaximumSize = body.MaximumSize = new(width, 0);
+        public void Wrap(int width)
+        {
+            var available = new Size(width, int.MaxValue);
+            Size headingSize = TextRenderer.MeasureText(header.Text, header.Font, available, MeasureFlags);
+            Size bodySize = TextRenderer.MeasureText(body.Text, body.Font, available, MeasureFlags);
+            int textWidth = Math.Min(width, Math.Max(headingSize.Width, bodySize.Width) + 6);
+            header.SetBounds(Padding.Left, Padding.Top, textWidth, headingSize.Height + 2);
+            body.SetBounds(Padding.Left, header.Bottom + 2, textWidth, bodySize.Height + 3);
+            Size = new(textWidth + Padding.Horizontal, body.Bottom + Padding.Bottom);
+        }
     }
 }

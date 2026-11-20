@@ -52,6 +52,7 @@ internal sealed class ChatWindow : Form
         feedback.Margin = new(0, 6, 0, 1);
         var header = Ui.Label("Fırat Chat", 28, true);
         Controls.Add(Ui.Stack(18, (header, 0), (tabs, 100), (feedback, 0)));
+        SizeChanged += (_, _) => feedback.MaximumSize = new(Math.Max(1, ClientSize.Width - 36), 0);
 
         connect.Click += async (_, _) => await Connect();
         disconnect.Click += (_, _) => { if (connectingToken is not null) connectingToken.Cancel(); else Disconnect("Bağlantı kesildi."); };
@@ -111,7 +112,7 @@ internal sealed class ChatWindow : Form
     private static TextBox Input(string name, int width) =>
         new() { AccessibleName = name, Width = width, Margin = new(0, 6, 9, 3) };
     private static NumericUpDown Port(string name) =>
-        new() { Minimum = 1024, Maximum = 65535, Value = 5055, AccessibleName = name, Width = 78, Margin = new(0, 6, 10, 3) };
+        new() { Minimum = 1024, Maximum = 65535, Value = 5056, AccessibleName = name, Width = 78, Margin = new(0, 6, 10, 3) };
 
     private async Task Connect()
     {
